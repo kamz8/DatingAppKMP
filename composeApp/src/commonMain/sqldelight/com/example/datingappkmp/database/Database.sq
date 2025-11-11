@@ -1,0 +1,115 @@
+-- Category table
+CREATE TABLE Category (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL,
+    emoji TEXT NOT NULL
+);
+
+-- Question table
+CREATE TABLE Question (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    categoryId INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (categoryId) REFERENCES Category(id) ON DELETE CASCADE
+);
+
+-- PlayerConfig table
+CREATE TABLE PlayerConfig (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    playerId TEXT NOT NULL,
+    playerName TEXT NOT NULL,
+    partnerId TEXT,
+    partnerName TEXT,
+    deviceType TEXT NOT NULL,
+    setupMethod TEXT NOT NULL,
+    setupDate INTEGER NOT NULL
+);
+
+-- QuestionHistory table
+CREATE TABLE QuestionHistory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    questionId INTEGER NOT NULL,
+    questionText TEXT NOT NULL,
+    categoryId INTEGER NOT NULL,
+    categoryName TEXT NOT NULL,
+    categoryEmoji TEXT NOT NULL,
+    askedAt INTEGER NOT NULL,
+    yourTurn INTEGER NOT NULL DEFAULT 0,
+    isFirstTouch INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (questionId) REFERENCES Question(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES Category(id) ON DELETE CASCADE
+);
+
+-- Category queries
+insertCategory:
+INSERT INTO Category (name, emoji)
+VALUES (?, ?);
+
+getAllCategories:
+SELECT * FROM Category;
+
+getCategoryById:
+SELECT * FROM Category WHERE id = ?;
+
+deleteAllCategories:
+DELETE FROM Category;
+
+-- Question queries
+insertQuestion:
+INSERT INTO Question (categoryId, text, createdAt)
+VALUES (?, ?, ?);
+
+getAllQuestions:
+SELECT * FROM Question;
+
+getQuestionById:
+SELECT * FROM Question WHERE id = ?;
+
+getQuestionsByCategory:
+SELECT * FROM Question WHERE categoryId = ?;
+
+getRandomQuestion:
+SELECT * FROM Question ORDER BY RANDOM() LIMIT 1;
+
+deleteAllQuestions:
+DELETE FROM Question;
+
+-- PlayerConfig queries
+insertPlayerConfig:
+INSERT INTO PlayerConfig (playerId, playerName, partnerId, partnerName, deviceType, setupMethod, setupDate)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getPlayerConfig:
+SELECT * FROM PlayerConfig LIMIT 1;
+
+updatePlayerConfig:
+UPDATE PlayerConfig
+SET playerName = ?, partnerId = ?, partnerName = ?, deviceType = ?, setupMethod = ?, setupDate = ?
+WHERE id = ?;
+
+deletePlayerConfig:
+DELETE FROM PlayerConfig;
+
+-- QuestionHistory queries
+insertQuestionHistory:
+INSERT INTO QuestionHistory (questionId, questionText, categoryId, categoryName, categoryEmoji, askedAt, yourTurn, isFirstTouch)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllHistory:
+SELECT * FROM QuestionHistory ORDER BY askedAt DESC;
+
+getHistoryLimit:
+SELECT * FROM QuestionHistory ORDER BY askedAt DESC LIMIT ?;
+
+getHistoryByCategory:
+SELECT * FROM QuestionHistory WHERE categoryId = ? ORDER BY askedAt DESC;
+
+getFirstTouchEntry:
+SELECT * FROM QuestionHistory WHERE isFirstTouch = 1 LIMIT 1;
+
+deleteAllHistory:
+DELETE FROM QuestionHistory;
+
+deleteHistoryById:
+DELETE FROM QuestionHistory WHERE id = ?;
