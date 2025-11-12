@@ -10,13 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 data class GameState(
     val currentQuestion: Question? = null,
     val playerConfig: PlayerConfig? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val showFirstTouchAnimation: Boolean = false
+    val showFirstTouchAnimation: Boolean = false,
+    val questionsShownInSession: Int = 0,
+    val totalQuestions: Int = 0
 )
 
 class GameViewModel(
@@ -26,8 +29,12 @@ class GameViewModel(
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
 
+    // Cache pytań już pokazanych w bieżącej sesji
+    private val shownQuestionIds = mutableSetOf<Long>()
+
     init {
         loadPlayerConfig()
+        loadTotalQuestions()
         loadNextQuestion()
     }
 
@@ -42,16 +49,42 @@ class GameViewModel(
         }
     }
 
+    private fun loadTotalQuestions() {
+        viewModelScope.launch {
+            try {
+                val total = repository.getAllQuestions().size
+                _state.update { it.copy(totalQuestions = total) }
+            } catch (e: Exception) {
+                println("Error loading total questions: ${e.message}")
+            }
+        }
+    }
+
     fun loadNextQuestion() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val question = repository.getRandomQuestion()
-                _state.update {
-                    it.copy(
-                        currentQuestion = question,
-                        isLoading = false
-                    )
+                // Losuj pytanie wykluczając już pokazane w sesji
+                val question = repository.getRandomQuestionExcluding(shownQuestionIds)
+
+                if (question != null) {
+                    // Dodaj do cache sesji
+                    shownQuestionIds.add(question.id)
+
+                    _state.update {
+                        it.copy(
+                            currentQuestion = question,
+                            isLoading = false,
+                            questionsShownInSession = shownQuestionIds.size
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "No questions available"
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _state.update {
@@ -64,6 +97,13 @@ class GameViewModel(
         }
     }
 
+    fun resetSession() {
+        shownQuestionIds.clear()
+        _state.update { it.copy(questionsShownInSession = 0) }
+        loadNextQuestion()
+    }
+
+    @OptIn(kotlin.time.ExperimentalTime::class)
     fun recordQuestion(isFirstTouch: Boolean = false) {
         viewModelScope.launch {
             val question = _state.value.currentQuestion ?: return@launch
@@ -80,7 +120,7 @@ class GameViewModel(
                         categoryId = category.id,
                         categoryName = category.name,
                         categoryEmoji = category.emoji,
-                        askedAt = System.currentTimeMillis(),
+                        askedAt = Clock.System.now().toEpochMilliseconds(),
                         yourTurn = true,
                         isFirstTouch = isFirstTouch
                     )

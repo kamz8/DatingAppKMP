@@ -1,5 +1,7 @@
 package com.example.datingappkmp
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,8 +62,22 @@ fun App(databaseDriverFactory: DatabaseDriverFactory, deviceType: DeviceType) {
                 playerConfig = repository.getPlayerConfig()
             }
 
-            when (val screen = currentScreen) {
-                Screen.Welcome -> {
+            // Animated navigation between screens
+            AnimatedContent(
+                targetState = currentScreen,
+                transitionSpec = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    ) togetherWith slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300, easing = FastOutSlowInEasing)
+                    )
+                },
+                label = "screen_transition"
+            ) { screen ->
+                when (screen) {
+                    Screen.Welcome -> {
                     val setupViewModel = remember { SetupViewModel(repository, deviceType) }
                     WelcomeScreen(
                         viewModel = setupViewModel,
@@ -133,6 +149,7 @@ fun App(databaseDriverFactory: DatabaseDriverFactory, deviceType: DeviceType) {
                             currentScreen = Screen.Home
                         }
                     )
+                }
                 }
             }
         }

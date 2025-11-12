@@ -1,10 +1,13 @@
 package com.example.datingappkmp.presentation.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,6 +52,7 @@ fun HistoryScreenContent(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding() // Safe area dla iOS
     ) {
         // Header
         Surface(
@@ -59,7 +63,8 @@ fun HistoryScreenContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp, bottom = 16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -128,13 +133,29 @@ fun HistoryScreenContent(
                 ) {
                     // First Touch Entry (if exists)
                     state.firstTouchEntry?.let { firstTouch ->
-                        item {
-                            FirstTouchCard(entry = firstTouch)
+                        item(key = "first_touch") {
+                            FirstTouchCard(
+                                entry = firstTouch,
+                                modifier = Modifier.animateItem(
+                                    fadeInSpec = tween(500),
+                                    fadeOutSpec = tween(500)
+                                )
+                            )
                         }
                     }
 
-                    items(state.entries) { entry ->
-                        HistoryItemCard(entry = entry)
+                    // Animated list items
+                    items(
+                        items = state.entries,
+                        key = { it.id }
+                    ) { entry ->
+                        HistoryItemCard(
+                            entry = entry,
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = tween(400),
+                                fadeOutSpec = tween(400)
+                            )
+                        )
                     }
                 }
             }
@@ -195,9 +216,9 @@ fun CategoryFilter(
 }
 
 @Composable
-fun FirstTouchCard(entry: QuestionHistory) {
+fun FirstTouchCard(entry: QuestionHistory, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -245,9 +266,9 @@ fun FirstTouchCard(entry: QuestionHistory) {
 }
 
 @Composable
-fun HistoryItemCard(entry: QuestionHistory) {
+fun HistoryItemCard(entry: QuestionHistory, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -308,6 +329,7 @@ fun HistoryItemCard(entry: QuestionHistory) {
     }
 }
 
+@OptIn(kotlin.time.ExperimentalTime::class)
 fun formatTimestamp(millis: Long): String {
     val instant = Instant.fromEpochMilliseconds(millis)
     val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())

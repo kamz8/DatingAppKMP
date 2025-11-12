@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -48,7 +49,7 @@ class SetupViewModel(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
+    @OptIn(ExperimentalUuidApi::class, kotlin.time.ExperimentalTime::class)
     fun startManualSetup(playerName: String, partnerName: String) {
         if (playerName.isBlank()) {
             _state.value = SetupState.Error("Player name cannot be empty")
@@ -73,7 +74,7 @@ class SetupViewModel(
                     partnerName = partnerName,
                     deviceType = deviceType,
                     setupMethod = SetupMethod.MANUAL,
-                    setupDate = System.currentTimeMillis()
+                    setupDate = Clock.System.now().toEpochMilliseconds()
                 )
 
                 val config = repository.getPlayerConfig()
@@ -88,7 +89,7 @@ class SetupViewModel(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
+    @OptIn(ExperimentalUuidApi::class, kotlin.time.ExperimentalTime::class)
     fun startSoloMode(playerName: String) {
         if (playerName.isBlank()) {
             _state.value = SetupState.Error("Player name cannot be empty")
@@ -107,7 +108,7 @@ class SetupViewModel(
                     partnerName = null,
                     deviceType = deviceType,
                     setupMethod = SetupMethod.SOLO,
-                    setupDate = System.currentTimeMillis()
+                    setupDate = Clock.System.now().toEpochMilliseconds()
                 )
 
                 val config = repository.getPlayerConfig()
@@ -130,7 +131,7 @@ class SetupViewModel(
         _state.value = SetupState.NFCReady(playerName)
     }
 
-    @OptIn(ExperimentalUuidApi::class)
+    @OptIn(ExperimentalUuidApi::class, kotlin.time.ExperimentalTime::class)
     fun onNFCDataReceived(playerName: String, partnerName: String, partnerId: String) {
         viewModelScope.launch {
             _state.value = SetupState.Loading
@@ -144,7 +145,7 @@ class SetupViewModel(
                     partnerName = partnerName,
                     deviceType = deviceType,
                     setupMethod = SetupMethod.NFC,
-                    setupDate = System.currentTimeMillis()
+                    setupDate = Clock.System.now().toEpochMilliseconds()
                 )
 
                 val config = repository.getPlayerConfig()

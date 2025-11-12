@@ -3,9 +3,11 @@ package com.example.datingappkmp.data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
 
 object SeedData {
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     suspend fun seedDatabase(repository: QuestionRepository) = withContext(Dispatchers.IO) {
         try {
             // Check if already seeded
@@ -33,7 +35,8 @@ object SeedData {
                 repository.insertCategory(name, emoji)
             }
 
-            val currentTime = System.currentTimeMillis()
+            val currentTime = Clock.System.now().toEpochMilliseconds()
+
 
             // Get category IDs (assuming they're inserted in order starting from 1)
             val categoryIds = repository.getAllCategories().associateBy { it.name }

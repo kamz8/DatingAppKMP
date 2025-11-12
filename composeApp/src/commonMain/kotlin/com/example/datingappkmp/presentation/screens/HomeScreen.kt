@@ -95,18 +95,17 @@ fun HomeScreen(
                     shape = RoundedCornerShape(24.dp),
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 8.dp
-                    )
+                    ),
+                    contentPadding = PaddingValues(16.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "🎮",
-                            style = MaterialTheme.typography.displaySmall
-                        )
-                        Text(
-                            text = "GRAJ",
-                            style = MaterialTheme.typography.titleLarge
+                            text = "🎮 GRAJ",
+                            style = MaterialTheme.typography.headlineLarge
                         )
                     }
                 }

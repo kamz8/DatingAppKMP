@@ -31,6 +31,7 @@ fun GameScreen(
         onRecordQuestion = { isFirstTouch ->
             viewModel.recordQuestion(isFirstTouch)
         },
+        onResetSession = { viewModel.resetSession() },
         onBackToHome = onBackToHome,
         onClearError = { viewModel.clearError() }
     )
@@ -41,6 +42,7 @@ fun GameScreenContent(
     state: GameState,
     onNextQuestion: () -> Unit,
     onRecordQuestion: (Boolean) -> Unit,
+    onResetSession: () -> Unit,
     onBackToHome: () -> Unit,
     onClearError: () -> Unit
 ) {
@@ -59,60 +61,105 @@ fun GameScreenContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding() // Safe area dla iOS
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Header
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                TextButton(onClick = onBackToHome) {
-                    Text("← Home")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onBackToHome) {
+                        Text("← Home")
+                    }
+
+                    state.playerConfig?.let { config ->
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = config.playerName,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            config.partnerName?.let {
+                                Text(
+                                    text = "& $it",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    }
                 }
 
-                state.playerConfig?.let { config ->
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = config.playerName,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        config.partnerName?.let {
+                // Session counter
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Pytania w sesji: ${state.questionsShownInSession} / ${state.totalQuestions}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+
+                    if (state.questionsShownInSession > 0) {
+                        TextButton(onClick = onResetSession) {
                             Text(
-                                text = "& $it",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                text = "🔄 Nowa sesja",
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
                 }
             }
 
-            // Question Card
+            // Question Card with Animation
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(48.dp),
                     color = Pink
                 )
             } else {
-                state.currentQuestion?.let { question ->
-                    QuestionCard(
-                        question = question.text,
-                        categoryId = question.categoryId,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(vertical = 32.dp)
-                    )
-                } ?: run {
-                    Text(
-                        text = "No questions available.\nPlease seed the database.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                    )
+                AnimatedContent(
+                    targetState = state.currentQuestion,
+                    transitionSpec = {
+                        // Scale + Fade animation for question card
+                        (scaleIn(
+                            initialScale = 0.8f,
+                            animationSpec = tween(400, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(400))) togetherWith
+                        (scaleOut(
+                            targetScale = 0.8f,
+                            animationSpec = tween(400, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(400)))
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(vertical = 32.dp),
+                    label = "question_animation"
+                ) { question ->
+                    question?.let {
+                        QuestionCard(
+                            question = it.text,
+                            categoryId = it.categoryId,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } ?: run {
+                        Text(
+                            text = "No questions available.\nPlease seed the database.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
 
@@ -173,11 +220,14 @@ fun QuestionCard(
     modifier: Modifier = Modifier
 ) {
     val categoryEmoji = when (categoryId) {
-        1L -> "🌟"
-        2L -> "💕"
-        3L -> "😄"
-        4L -> "🧠"
-        5L -> "✈️"
+        1L -> "🌟"  // Marzenia & Aspiracje
+        2L -> "💕"  // Miłość & Relacje
+        3L -> "😄"  // Śmieszne & Dziwne
+        4L -> "🧠"  // Głębokie myśli
+        5L -> "✈️"  // Przygoda & Podróże
+        6L -> "😘"  // Flirt
+        7L -> "🔥"  // Pikantne
+        8L -> "🧩"  // Neuroatypowość
         else -> "❓"
     }
 

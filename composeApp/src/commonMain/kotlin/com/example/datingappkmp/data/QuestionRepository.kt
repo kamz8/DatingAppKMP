@@ -60,6 +60,24 @@ class QuestionRepository(databaseDriverFactory: DatabaseDriverFactory) {
         }
     }
 
+    suspend fun getRandomQuestionExcluding(excludedIds: Set<Long>): Question? = withContext(Dispatchers.IO) {
+        try {
+            val allQuestions = dbQuery.getAllQuestions().executeAsList()
+            val availableQuestions = allQuestions.filter { it.id !in excludedIds }
+
+            if (availableQuestions.isEmpty()) {
+                // Wszystkie pytania już pokazane - zwróć losowe z puli
+                println("All questions shown in session, returning random from all")
+                return@withContext allQuestions.randomOrNull()
+            }
+
+            availableQuestions.randomOrNull()
+        } catch (e: Exception) {
+            println("Error getting random question excluding: ${e.message}")
+            null
+        }
+    }
+
     suspend fun insertQuestion(categoryId: Long, text: String, createdAt: Long) = withContext(Dispatchers.IO) {
         try {
             dbQuery.insertQuestion(categoryId, text, createdAt)
